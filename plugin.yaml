@@ -1,0 +1,31 @@
+name: gateway-pricing
+version: 0.2.0
+description: >-
+  Cost estimates for sessions that go through custom providers, local shims and LLM gateways,
+  which Hermes otherwise records as $0.00 / unknown. Declare per-endpoint rules (bill like a
+  vendor, explicit prices, or free) and optionally backfill old sessions.
+author: madpin
+license: MIT
+requires_hermes: ">=0.23.1"
+config_schema:
+  enabled:
+    type: bool
+    default: true
+    label: Enabled
+    description: Apply the rules below to Hermes' cost estimates.
+  rules:
+    type: list
+    default: []
+    label: Rules
+    description: >-
+      Evaluated top to bottom, first match wins. Each rule has match.base_url
+      (host[:port][/path], '*.' wildcard allowed), optional match.models (globs), and exactly one
+      of price_as (auto | vendor | vendor/model), prices ({input, output, cache_read,
+      cache_write} USD per 1M tokens) or free (true); optional multiplier and override.
+      See the README for examples.
+  aliases:
+    type: dict
+    default: {}
+    label: Model aliases
+    description: >-
+      Rewrite a model id before pricing, e.g. {"chat-latest": "gpt-6.1-sol"}.

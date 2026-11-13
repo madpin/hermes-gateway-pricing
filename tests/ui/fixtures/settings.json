@@ -1,0 +1,37 @@
+{
+  "aliases": {
+    "chat-latest": "gpt-6.1-sol"
+  },
+  "enabled": true,
+  "rules": [
+    {
+      "id": "claude-shim",
+      "match": {
+        "base_url": "127.0.0.1:9001"
+      },
+      "price_as": "anthropic"
+    },
+    {
+      "id": "gemini-shim",
+      "match": {
+        "base_url": "127.0.0.1:9002"
+      },
+      "price_as": "google"
+    },
+    {
+      "id": "gateway",
+      "match": {
+        "base_url": "gateway.example.com/openai"
+      },
+      "multiplier": 1.1,
+      "price_as": "openai"
+    },
+    {
+      "free": true,
+      "id": "llama",
+      "match": {
+        "base_url": "127.0.0.1:9003"
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "amount_usd": 18.0,
+  "matched_rule": "flat",
+  "mode": "prices",
+  "per_million": {
+    "cache_read": null,
+    "cache_write": null,
+    "input": 3.0,
+    "output": 15.0
+  },
+  "pricing_version": "gateway-pricing:0.2.0",
+  "reason": "matched rule 'flat'",
+  "route": {
+    "billing_mode": "user_override",
+    "model": "mystery-model",
+    "provider": "custom"
+  },
+  "source": "user_override",
+  "status": "estimated",
+  "warnings": []
+}

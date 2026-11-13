@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "hermes_version": "0.0.0-fixture",
+  "plugin_version": "0.2.0",
+  "reason": "",
+  "rules_total": 4,
+  "rules_valid": 4,
+  "vendors": [
+    "anthropic",
+    "bedrock",
+    "deepseek",
+    "fireworks",
+    "google",
+    "minimax",
+    "minimax-cn",
+    "openai",
+    "xai",
+    "xiaomi"
+  ],
+  "warnings": [],
+  "wrapped": [
+    "resolve_billing_route",
+    "get_pricing_entry"
+  ]
+}

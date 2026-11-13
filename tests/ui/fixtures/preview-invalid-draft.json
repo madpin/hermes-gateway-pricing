@@ -1,0 +1,23 @@
+{
+  "amount_usd": null,
+  "matched_rule": null,
+  "mode": null,
+  "per_million": {
+    "cache_read": null,
+    "cache_write": null,
+    "input": null,
+    "output": null
+  },
+  "pricing_version": null,
+  "reason": "no rule matches this model and base URL",
+  "route": {
+    "billing_mode": "unknown",
+    "model": "lint",
+    "provider": "custom"
+  },
+  "source": "none",
+  "status": "unknown",
+  "warnings": [
+    "rules[4] (future): unknown key(s) tier; rule skipped"
+  ]
+}

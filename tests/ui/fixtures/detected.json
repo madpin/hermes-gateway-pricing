@@ -1,0 +1,131 @@
+[
+  {
+    "base_url": "http://127.0.0.1:9002/v1",
+    "cache_read_tokens": 0,
+    "calls": 1,
+    "host": "127.0.0.1:9002",
+    "input_tokens": 80000,
+    "last_seen": 1799995020.0,
+    "matched_rule": null,
+    "model": "gemini-3.8-flash",
+    "output_tokens": 900,
+    "sessions": 1,
+    "suggestion": {
+      "confidence": "high",
+      "mode": "price_as",
+      "price_as": "google",
+      "reason": "model id looks like google; Hermes has a google list price for 'gemini-3.8-flash'"
+    }
+  },
+  {
+    "base_url": "http://127.0.0.1:9001",
+    "cache_read_tokens": 51000,
+    "calls": 5,
+    "host": "127.0.0.1:9001",
+    "input_tokens": 3800,
+    "last_seen": 1799999960.0,
+    "matched_rule": null,
+    "model": "claude-opus-5-5",
+    "output_tokens": 2450,
+    "sessions": 4,
+    "suggestion": {
+      "confidence": "high",
+      "mode": "price_as",
+      "price_as": "anthropic",
+      "reason": "model id looks like anthropic; Hermes has a anthropic list price for 'claude-opus-5-5'"
+    }
+  },
+  {
+    "base_url": "http://127.0.0.1:9003/v1",
+    "cache_read_tokens": 30000,
+    "calls": 1,
+    "host": "127.0.0.1:9003",
+    "input_tokens": 20000,
+    "last_seen": 1799996020.0,
+    "matched_rule": "llama",
+    "model": "Qwen3.6-35B-A3B-UD-Q4_K_M",
+    "output_tokens": 2000,
+    "sessions": 1,
+    "suggestion": null
+  },
+  {
+    "base_url": "https://gateway.example.com/openai/v1",
+    "cache_read_tokens": 20000,
+    "calls": 1,
+    "host": "gateway.example.com:443",
+    "input_tokens": 4000,
+    "last_seen": 1799994020.0,
+    "matched_rule": null,
+    "model": "gpt-6.1-sol",
+    "output_tokens": 800,
+    "sessions": 1,
+    "suggestion": {
+      "confidence": "high",
+      "mode": "price_as",
+      "price_as": "openai",
+      "reason": "model id looks like openai; Hermes has a openai list price for 'gpt-6.1-sol'"
+    }
+  },
+  {
+    "base_url": "http://127.0.0.1:9001",
+    "cache_read_tokens": 9000,
+    "calls": 1,
+    "host": "127.0.0.1:9001",
+    "input_tokens": 10,
+    "last_seen": 1799993020.0,
+    "matched_rule": null,
+    "model": "us.anthropic.claude-opus-5-5-v1:0",
+    "output_tokens": 500,
+    "sessions": 1,
+    "suggestion": {
+      "confidence": "high",
+      "mode": "price_as",
+      "price_as": "anthropic",
+      "reason": "model id looks like anthropic; Hermes has a anthropic list price for 'claude-opus-5-5'"
+    }
+  },
+  {
+    "base_url": "https://gateway.example.com/openai/v1",
+    "cache_read_tokens": 0,
+    "calls": 1,
+    "host": "gateway.example.com:443",
+    "input_tokens": 500,
+    "last_seen": 1799994020.0,
+    "matched_rule": null,
+    "model": "chat-latest",
+    "output_tokens": 50,
+    "sessions": 1,
+    "suggestion": {
+      "confidence": "high",
+      "mode": "price_as",
+      "price_as": "openai",
+      "reason": "model id looks like openai; Hermes has a openai list price for 'gpt-6.1-sol'"
+    }
+  },
+  {
+    "base_url": "https://other.example.net/v1",
+    "cache_read_tokens": 0,
+    "calls": 1,
+    "host": "other.example.net:443",
+    "input_tokens": 100,
+    "last_seen": 1799998020.0,
+    "matched_rule": null,
+    "model": "mystery-model",
+    "output_tokens": 100,
+    "sessions": 1,
+    "suggestion": null
+  },
+  {
+    "base_url": "process://amp",
+    "cache_read_tokens": 0,
+    "calls": 1,
+    "host": "amp",
+    "input_tokens": 100,
+    "last_seen": 1799998220.0,
+    "matched_rule": null,
+    "model": "glm-5.3-flash",
+    "output_tokens": 10,
+    "sessions": 1,
+    "suggestion": null
+  }
+]

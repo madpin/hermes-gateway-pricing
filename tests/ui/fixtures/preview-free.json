@@ -1,0 +1,21 @@
+{
+  "amount_usd": 0.0,
+  "matched_rule": "llama",
+  "mode": "free",
+  "per_million": {
+    "cache_read": 0.0,
+    "cache_write": 0.0,
+    "input": 0.0,
+    "output": 0.0
+  },
+  "pricing_version": "included-route",
+  "reason": "matched rule 'llama'; subscription-included; no provider invoice for usage",
+  "route": {
+    "billing_mode": "subscription_included",
+    "model": "Qwen3.6-35B-A3B-UD-Q4_K_M",
+    "provider": "custom"
+  },
+  "source": "none",
+  "status": "included",
+  "warnings": []
+}

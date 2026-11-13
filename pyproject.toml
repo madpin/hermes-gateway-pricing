@@ -1,0 +1,21 @@
+# Tooling configuration only: this repository is a Hermes plugin, not an installable package.
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [".ref"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "B008",  # FastAPI's Query()/Body() defaults are the documented idiom
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["gateway_pricing"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "tests"]
+addopts = "--import-mode=importlib -p no:cacheprovider"
+filterwarnings = ["ignore::DeprecationWarning"]

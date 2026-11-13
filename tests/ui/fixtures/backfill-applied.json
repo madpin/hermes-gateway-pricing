@@ -1,0 +1,52 @@
+{
+  "backup_path": "$HERMES_HOME/gateway-pricing/backups/state-20260101T000000Z.db",
+  "by_endpoint": [
+    {
+      "delta_usd": 0.08384,
+      "endpoint": "127.0.0.1:9001",
+      "matched_rule": "claude-shim",
+      "models": [
+        "claude-opus-5-5",
+        "us.anthropic.claude-opus-5-5-v1:0"
+      ],
+      "rows": 5
+    },
+    {
+      "delta_usd": 0.063375,
+      "endpoint": "127.0.0.1:9002",
+      "matched_rule": "gemini-shim",
+      "models": [
+        "gemini-3.8-flash"
+      ],
+      "rows": 1
+    },
+    {
+      "delta_usd": 0.02145,
+      "endpoint": "gateway.example.com:443",
+      "matched_rule": "gateway",
+      "models": [
+        "chat-latest",
+        "gpt-6.1-sol"
+      ],
+      "rows": 2
+    },
+    {
+      "delta_usd": 0.0,
+      "endpoint": "127.0.0.1:9003",
+      "matched_rule": "llama",
+      "models": [
+        "Qwen3.6-35B-A3B-UD-Q4_K_M"
+      ],
+      "rows": 1
+    }
+  ],
+  "delta_usd": 0.168665,
+  "dry_run": false,
+  "rows_considered": 9,
+  "rows_unpriced": 0,
+  "rows_updated": 8,
+  "sessions_skipped_live": 1,
+  "sessions_skipped_priced": 1,
+  "sessions_updated": 6,
+  "warnings": []
+}

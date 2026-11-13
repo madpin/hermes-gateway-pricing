@@ -1,0 +1,61 @@
+[
+  {
+    "default": true,
+    "description": "Apply the rules below to Hermes' cost estimates.",
+    "key": "enabled",
+    "label": "Enabled",
+    "required": false,
+    "type": "boolean",
+    "value": true
+  },
+  {
+    "default": [],
+    "description": "Evaluated top to bottom, first match wins. Each rule has match.base_url (host[:port][/path], '*.' wildcard allowed), optional match.models (globs), and exactly one of price_as (auto | vendor | vendor/model), prices ({input, output, cache_read, cache_write} USD per 1M tokens) or free (true); optional multiplier and override. See the README for examples.",
+    "key": "rules",
+    "label": "Rules",
+    "required": false,
+    "type": "json",
+    "value": [
+      {
+        "id": "claude-shim",
+        "match": {
+          "base_url": "127.0.0.1:9001"
+        },
+        "price_as": "anthropic"
+      },
+      {
+        "id": "gemini-shim",
+        "match": {
+          "base_url": "127.0.0.1:9002"
+        },
+        "price_as": "google"
+      },
+      {
+        "id": "gateway",
+        "match": {
+          "base_url": "gateway.example.com/openai"
+        },
+        "multiplier": 1.1,
+        "price_as": "openai"
+      },
+      {
+        "free": true,
+        "id": "llama",
+        "match": {
+          "base_url": "127.0.0.1:9003"
+        }
+      }
+    ]
+  },
+  {
+    "default": {},
+    "description": "Rewrite a model id before pricing, e.g. {\"chat-latest\": \"gpt-6.1-sol\"}.",
+    "key": "aliases",
+    "label": "Model aliases",
+    "required": false,
+    "type": "json",
+    "value": {
+      "chat-latest": "gpt-6.1-sol"
+    }
+  }
+]

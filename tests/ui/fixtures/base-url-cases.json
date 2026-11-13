@@ -1,0 +1,118 @@
+[
+  {
+    "base_url": "gateway.example.com",
+    "valid": true
+  },
+  {
+    "base_url": "gateway.example.com/openai",
+    "valid": true
+  },
+  {
+    "base_url": "gateway.example.com/openai/v1/",
+    "valid": true
+  },
+  {
+    "base_url": "127.0.0.1:9001",
+    "valid": true
+  },
+  {
+    "base_url": "https://gateway.example.com/v1",
+    "valid": true
+  },
+  {
+    "base_url": "http://127.0.0.1:9001",
+    "valid": true
+  },
+  {
+    "base_url": "*.example.com",
+    "valid": true
+  },
+  {
+    "base_url": "[::1]:8080",
+    "valid": true
+  },
+  {
+    "base_url": "localhost",
+    "valid": true
+  },
+  {
+    "base_url": "localhost:",
+    "valid": true
+  },
+  {
+    "base_url": "UPPER.Example.COM",
+    "valid": true
+  },
+  {
+    "base_url": "trailing.dot.example.com.",
+    "valid": true
+  },
+  {
+    "base_url": "under_score.example.com",
+    "valid": true
+  },
+  {
+    "base_url": "a b.example.com",
+    "valid": false
+  },
+  {
+    "base_url": "back\\slash.example.com",
+    "valid": false
+  },
+  {
+    "base_url": "user@gateway.example.com",
+    "valid": false
+  },
+  {
+    "base_url": "gateway.example.com?x=1",
+    "valid": false
+  },
+  {
+    "base_url": "gateway.example.com#frag",
+    "valid": false
+  },
+  {
+    "base_url": "gateway.example.com:99999",
+    "valid": false
+  },
+  {
+    "base_url": "gateway.example.com:abc",
+    "valid": false
+  },
+  {
+    "base_url": "*.127.0.0.1",
+    "valid": false
+  },
+  {
+    "base_url": "foo*.example.com",
+    "valid": false
+  },
+  {
+    "base_url": "*",
+    "valid": false
+  },
+  {
+    "base_url": "",
+    "valid": false
+  },
+  {
+    "base_url": "   ",
+    "valid": false
+  },
+  {
+    "base_url": "-bad.example.com",
+    "valid": false
+  },
+  {
+    "base_url": "bad-.example.com",
+    "valid": false
+  },
+  {
+    "base_url": "http://",
+    "valid": false
+  },
+  {
+    "base_url": "exa%mple.com",
+    "valid": false
+  }
+]
