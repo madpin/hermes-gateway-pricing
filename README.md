@@ -18,7 +18,8 @@ With this plugin you declare rules such as:
 
 Hermes' own cost pipeline then uses those rules, live, and you can recompute old sessions.
 
-* Version 0.2.0, MIT licensed. Tested on Hermes **0.23.1**.
+* Version 0.2.1, MIT licensed. Verified against Hermes release **v2026.9.24** (reports version
+  0.21.5) and Hermes `main`, which is also the CI matrix; see [Compatibility](#compatibility).
 * No network calls, no secrets read, no new dependencies.
 
 ## 60-second quickstart
@@ -166,7 +167,7 @@ Model ids are normalised the way Hermes does:
 
 **Status and source.** Vendor-aliased prices keep Hermes' own source (`official_docs_snapshot` or
 `provider_models_api`) and its pricing version. `prices:` rules report source `user_override` and
-pricing version `gateway-pricing:0.2.0`. `free:` reports `included`.
+pricing version `gateway-pricing:0.2.1`. `free:` reports `included`.
 
 **Invalid rules** are skipped with one warning each, logged once per distinct problem. The other
 rules keep working. Unknown keys are treated as errors so typos do not fail silently.
@@ -374,7 +375,7 @@ written defensively:
   * A repriced session's total becomes the sum of its usage rows. A session without usage rows is
     priced from its own token columns.
   * Changed sessions get `pricing_version = "gateway-pricing:<plugin version>"` (for example
-    `gateway-pricing:0.2.0`) and Hermes' `cost_status` /
+    `gateway-pricing:0.2.1`) and Hermes' `cost_status` /
     `cost_source` values, so they are easy to recognise.
   * A session Hermes already priced keeps its total even if one of its auxiliary rows (title
     generation, say) was repriced, unless an `override` rule matches. It is counted in
@@ -428,16 +429,18 @@ only by their `cost_status` / `cost_source`. The `pricing_version` marker is on 
 Hermes' admission lint (`hermes plugins validate`, `hermes_cli.plugin_validate`) refuses plugins
 that rebind core attributes at runtime, and this plugin has to do exactly that. Hermes offers no
 public hook to price an endpoint, and `ProviderProfile.get_usage_cost(model, usage)` never sees the
-base URL. The validator's finding on this repository, verbatim:
+base URL. The validator's finding on this repository, run on Hermes `main` (file positions omitted):
 
 ```
-FAIL no core override - rebinds Hermes core at runtime (use a public hook, middleware or provider profile): up.resolve_billing_route (hermes_compat.py:449); up.get_pricing_entry (hermes_compat.py:450); up.get_pricing_entry (hermes_compat.py:465); up.resolve_billing_route (hermes_compat.py:466)
-WARN private core imports (catalog rule 9: public surfaces only; these can break on any release): hermes_compat.py:103 agent.usage_pricing; hermes_compat.py:125 hermes_cli.plugins_manifest.running_hermes_version; hermes_compat.py:133 hermes_cli. Use ctx.* / documented plugin APIs, or open an issue for the seam you need.
+FAIL no core override - rebinds Hermes core at runtime (use a public hook, middleware or provider profile): up.resolve_billing_route (hermes_compat.py); up.get_pricing_entry (hermes_compat.py); up.get_pricing_entry (hermes_compat.py); up.resolve_billing_route (hermes_compat.py)
+WARN private core imports (catalog rule 9: public surfaces only; these can break on any release): hermes_compat.py agent.usage_pricing; hermes_compat.py hermes_cli.plugins_manifest.running_hermes_version; hermes_compat.py hermes_cli. Use ctx.* / documented plugin APIs, or open an issue for the seam you need.
 ```
 
-Lines 449–450 install the wrap; lines 465–466 restore the originals in `uninstall()`. Every other
-admission check passes, including manifest, config schema, capability probe and security scan.
-The private-import warnings are confined to `hermes_compat.py`.
+The first two assignments install the wrap in `install()`; the other two restore the originals in
+`uninstall()`. Every other admission check passes, including manifest, config schema, capability
+probe and security scan. The private-import warnings are confined to `hermes_compat.py`. CI runs
+the validator on the plugin directory alone and fails unless "no core override" is the only
+failure. Release v2026.9.24 predates that check, and there every check passes.
 
 The rebind is **not** hidden: no `setattr` tricks and no indirection to get past the lint. That
 lint is a safety check, and you should be able to see exactly what this plugin does:
@@ -461,8 +464,22 @@ To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
 ## Compatibility
 
-* Tested on Hermes **0.23.1** (`requires_hermes: ">=0.23.1"`). CI also runs against Hermes `main`
-  and the latest release tag.
+What is verified: the Python test suite, `scripts/check_hermes_compat.py` and the admission
+validator, run against each Hermes below. The CI matrix runs them on Python 3.11 and 3.14:
+
+* Hermes release tag **`v2026.9.24`**, which reports version **0.21.5**. This is the oldest Hermes
+  tested, so `requires_hermes` is `">=0.21.5"`. On this release Hermes has no bundled price for
+  some newer models (for example `gpt-6.1-sol`), so `price_as` leaves those `unknown` until you add
+  `prices`. Its validator has no "no core override" or "oauth" check, and it has no desktop review
+  lint, so that one test is skipped with a stated reason.
+* Hermes **`main`** (last verified locally on 2026-11-13 at commit `97039b4`, and weekly by CI).
+  A source checkout of `main` without an install stamp reports its version as `unknown`, and
+  Hermes' `requires_hermes` gate then lets the plugin load.
+
+The desktop settings page's SDK imports and component props are checked against `main` only (the
+`ui` job). On v2026.9.24 only its backend responses and the "desktop surface" lint are tested.
+Anything older than v2026.9.24, or between it and `main`, is untested. Also:
+
 * Python 3.11 – 3.14.
 * `scripts/check_hermes_compat.py` exits non-zero, with a readable report, when an installed
   Hermes no longer offers what the plugin needs.

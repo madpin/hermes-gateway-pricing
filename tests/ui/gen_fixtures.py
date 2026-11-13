@@ -26,6 +26,24 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 FIXTURES = HERE / "fixtures"
 HERMES_PLACEHOLDER = "0.0.0-fixture"
+# Same ids and base URLs as helpers.STANDARD_RULES, but with explicit ``prices`` / ``free`` instead of
+# ``price_as``: the backfill fixtures then do not depend on which Hermes (and bundled price table)
+# generated them. ``price_as`` appears only in fixtures the drift test compares by shape.
+FIXTURE_RULES = [
+    {
+        "id": "claude-shim",
+        "match": {"base_url": "127.0.0.1:9001"},
+        "prices": {"input": 5, "output": 25, "cache_read": 0.5},
+    },
+    {"id": "gemini-shim", "match": {"base_url": "127.0.0.1:9002"}, "prices": {"input": 0.5, "output": 3}},
+    {
+        "id": "gateway",
+        "match": {"base_url": "gateway.example.com/openai"},
+        "prices": {"input": 2, "output": 10, "cache_read": 0.2},
+        "multiplier": 1.1,
+    },
+    {"id": "llama", "match": {"base_url": "127.0.0.1:9003"}, "free": True},
+]
 INVALID_RULE = {"id": "future", "match": {"base_url": "future.example.com"}, "price_as": "auto", "tier": "gold"}
 # match.base_url inputs; the backend's verdict on each is recorded so the editor's validation can be
 # checked against it (tests/ui/units.test.js).
@@ -163,6 +181,7 @@ def build_fixtures(home: Path) -> dict[str, object]:
         )
         out["error-400"] = post("/preview", {"model": "", "base_url": "x"}, status=400)
 
+        write_settings({"enabled": True, "rules": FIXTURE_RULES, "aliases": helpers.STANDARD_ALIASES})
         out["backfill-dry-run"] = post("/backfill", {"dry_run": True, "days": 30})
         out["error-409"] = post("/backfill", {"dry_run": False}, status=409)
         applied = post("/backfill", {"dry_run": False, "confirm": True, "days": 30})

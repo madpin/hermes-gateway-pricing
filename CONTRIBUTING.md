@@ -10,12 +10,42 @@ and `httpx`. Point `HERMES_SRC` at any Hermes checkout:
 
 ```bash
 git clone --depth 1 https://github.com/NousResearch/hermes-agent /tmp/hermes-agent
-HERMES_SRC=/tmp/hermes-agent python -m pytest -q
-HERMES_SRC=/tmp/hermes-agent python scripts/check_hermes_compat.py
+HERMES_SRC=/tmp/hermes-agent python -m pytest -q -rs
+PYTHONPATH=/tmp/hermes-agent python scripts/check_hermes_compat.py
 ```
 
-Or run with the Python of an existing Hermes installation, which already has Hermes importable.
-Never install anything into it.
+Clone Hermes **outside** this repository. Otherwise the admission validator and the syntax test
+scan Hermes' tree as if it were part of the plugin.
+
+To reproduce the CI matrix, keep one checkout per Hermes you test against, for example `main` and
+the pinned release (`git clone --depth 1 --branch v2026.9.24 ...`). A small wrapper per checkout
+saves typing. It is not part of the repo, so put it anywhere on your machine:
+
+```sh
+#!/bin/sh
+# hpy-release: a Python bound to one Hermes checkout
+export HERMES_SRC=/path/to/hermes-agent-v2026.9.24
+export PYTHONPATH="$HERMES_SRC"
+exec /path/to/a/venv/bin/python "$@"
+```
+
+Then run `hpy-release -m pytest -q -rs`, `hpy-release scripts/check_hermes_compat.py`, and the
+admission validator on the plugin directory alone:
+
+```bash
+hpy-release -c "from pathlib import Path; from hermes_cli.plugin_validate import validate_plugin_dir; r = validate_plugin_dir(Path('.').resolve()); print([c[0] for c in r.checks if not c[1]])"
+```
+
+On `main` the validator should print `['no core override']`. On v2026.9.24, which has no such
+check, it should print `[]`.
+
+You can also run with the Python of an existing Hermes installation, which already has Hermes
+importable. Never install anything into it.
+
+Tests must not assume Hermes' bundled content (prices, helper functions, version numbers), which
+differs between releases. Derive the expectation from the running Hermes, as
+`tests/helpers.py::hermes_lists_price` does. Or skip with a reason that names what is missing.
+Keep the assertions about the plugin's own behaviour strict either way.
 
 The tests protect your own Hermes data:
 
@@ -40,7 +70,7 @@ a small stand-in for `@hermes/plugin-sdk`. Node 20 or newer:
 
 ```bash
 cd tests/ui
-npm install          # devDependencies only, pinned in package.json; creates tests/ui/node_modules
+npm ci               # exact versions from package-lock.json; creates tests/ui/node_modules
 npx vitest run
 ```
 
@@ -53,7 +83,7 @@ are reported as skipped, with the reason in the test name:
   `ToggleRow`, `SegmentedControl`, `ConfirmDialog`, `EmptyState` and `ErrorState` must equal the
   real components' props.
 
-If you already have a Hermes desktop checkout with its `node_modules`, you can skip `npm install`.
+If you already have a Hermes desktop checkout with its `node_modules`, you can skip `npm ci`.
 Set `DESKTOP_NM=/path/to/apps/desktop/node_modules` and run that checkout's vitest with
 `--root tests/ui`. The config then resolves react, react-dom and Testing Library from there, read
 only.
@@ -63,7 +93,11 @@ The UI tests use JSON responses captured from the real backend, in `tests/ui/fix
 * After changing a response shape, regenerate them with
   `python tests/ui/gen_fixtures.py`. It runs in a temporary Hermes home on a synthetic database.
 * `tests/test_ui_fixtures.py` (part of `pytest`) fails when the committed files drift from the
-  backend.
+  backend. The fixtures must come out identical on every Hermes CI tests. So the generator prices
+  with `prices` / `free` rules. Fixtures that need Hermes' own numbers (a `price_as` preview) go in
+  the test's short `SHAPE_ONLY` list. Check with `python tests/ui/gen_fixtures.py --check` under
+  each Hermes checkout. Only `_meta`, plus `detected` on a Hermes that cannot price every model,
+  may differ.
 
 CI runs the `ui` job with both variables set from a shallow clone of `NousResearch/hermes-agent`.
 

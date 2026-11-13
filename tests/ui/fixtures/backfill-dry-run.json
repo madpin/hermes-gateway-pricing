@@ -2,7 +2,7 @@
   "backup_path": null,
   "by_endpoint": [
     {
-      "delta_usd": 0.08384,
+      "delta_usd": 0.1198,
       "endpoint": "127.0.0.1:9001",
       "matched_rule": "claude-shim",
       "models": [
@@ -12,7 +12,7 @@
       "rows": 5
     },
     {
-      "delta_usd": 0.063375,
+      "delta_usd": 0.0427,
       "endpoint": "127.0.0.1:9002",
       "matched_rule": "gemini-shim",
       "models": [
@@ -21,7 +21,7 @@
       "rows": 1
     },
     {
-      "delta_usd": 0.02145,
+      "delta_usd": 0.02365,
       "endpoint": "gateway.example.com:443",
       "matched_rule": "gateway",
       "models": [
@@ -40,7 +40,7 @@
       "rows": 1
     }
   ],
-  "delta_usd": 0.168665,
+  "delta_usd": 0.18615,
   "dry_run": true,
   "rows_considered": 9,
   "rows_unpriced": 0,

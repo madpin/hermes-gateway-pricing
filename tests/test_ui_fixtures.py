@@ -1,10 +1,17 @@
 """The desktop UI tests run on JSON captured from the real backend; fail when it drifts.
 
-Plugin-owned fields are compared exactly. Values Hermes prices (amounts, rates, suggestions) can
-differ between Hermes releases, so unless the running Hermes reports the same, known version the
-fixtures were generated with, only the shape is compared (keys, list lengths, value kinds; a null
-stands in for any scalar, since Hermes may not price a model). Regenerate with
-``python tests/ui/gen_fixtures.py``.
+The generator uses ``prices`` / ``free`` rules wherever a value matters, so every fixture is
+compared exactly on any Hermes, except:
+
+* ``SHAPE_ONLY``: fixtures whose values come from Hermes itself (a ``price_as`` preview priced from
+  Hermes' bundled table, Hermes' own settings-field rendering). Their shape is compared (keys, list
+  lengths, value kinds; a null stands in for any scalar, since Hermes may not price a model), plus
+  the plugin-owned fields checked below;
+* in ``detected``, a suggestion's ``confidence`` and ``reason``, which say whether Hermes has a list
+  price for the model.
+
+When the running Hermes reports the same, known version the fixtures were generated with, everything
+is compared exactly. Regenerate with ``python tests/ui/gen_fixtures.py``.
 """
 
 import importlib.util
@@ -16,6 +23,22 @@ from helpers import ROOT
 FIXTURES = ROOT / "tests" / "ui" / "fixtures"
 UNKNOWN_VERSIONS = {None, "", "unknown"}
 OPTIONAL = {"settings-fields"}  # needs hermes_cli.plugins_settings (absent on old Hermes)
+SHAPE_ONLY = {"preview-price-as", "settings-fields"}
+HERMES_PRICED_SUGGESTION_KEYS = {"confidence", "reason"}
+
+
+def _plugin_owned(name, value):
+    """``value`` without the parts that depend on Hermes' bundled price table."""
+    if name != "detected":
+        return value
+    return [
+        {
+            **row,
+            "suggestion": row["suggestion"]
+            and {k: v for k, v in row["suggestion"].items() if k not in HERMES_PRICED_SUGGESTION_KEYS},
+        }
+        for row in value
+    ]
 
 
 def _generator():
@@ -59,17 +82,21 @@ def test_ui_fixtures_match_the_backend(hermes_home):
         expected = json.loads(gen.dumps(value))
         if same_hermes:
             assert committed[name] == expected, f"{name}.json drifted: run tests/ui/gen_fixtures.py"
+        elif name in SHAPE_ONLY:
+            assert same_shape(committed[name], expected) is None, f"{name}.json changed shape"
         else:
             assert same_shape(committed[name], expected) is None, f"{name}.json changed shape"
+            assert _plugin_owned(name, committed[name]) == _plugin_owned(name, expected), (
+                f"{name}.json drifted: run tests/ui/gen_fixtures.py"
+            )
     # Plugin-owned values that never depend on Hermes' price tables: always exact.
     for name in ("settings", "base-url-cases", "error-400", "error-409"):
         assert committed[name] == fresh[name], f"{name}.json drifted: run tests/ui/gen_fixtures.py"
     assert committed["status"]["vendors"] == fresh["status"]["vendors"]
     assert committed["status"]["plugin_version"] == fresh["status"]["plugin_version"]
     assert committed["status-warnings"]["warnings"] == fresh["status-warnings"]["warnings"]
-    assert [(r["host"], r["model"], r["matched_rule"]) for r in committed["detected"]] == [
-        (r["host"], r["model"], r["matched_rule"]) for r in fresh["detected"]
-    ]
+    for key in ("matched_rule", "mode", "route", "warnings"):
+        assert committed["preview-price-as"][key] == fresh["preview-price-as"][key], key
     if "settings-fields" in fresh:
         assert [(f["key"], f["type"], f["value"]) for f in committed["settings-fields"]] == [
             (f["key"], f["type"], f["value"]) for f in fresh["settings-fields"]

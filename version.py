@@ -6,7 +6,7 @@ import re
 from functools import lru_cache
 from pathlib import Path
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 PLUGIN_ROOT = Path(__file__).resolve().parent
 PRICING_VERSION = f"gateway-pricing:{__version__}"

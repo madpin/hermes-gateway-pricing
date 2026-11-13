@@ -21,6 +21,19 @@ STANDARD_RULES = [
 STANDARD_ALIASES = {"chat-latest": "gpt-6.1-sol"}
 
 
+def hermes_lists_price(vendor: str, model: str) -> bool:
+    """Whether the Hermes under test has a bundled list price for ``vendor``/``model``.
+
+    Bundled prices differ between Hermes releases (v2026.9.24 has none for gpt-6.1-sol), so tests
+    that depend on one take their expectation from the running Hermes, not from a hard-coded table.
+    """
+    import agent.usage_pricing as up
+
+    usage = up.CanonicalUsage(input_tokens=1000, output_tokens=1000)
+    cost = up.estimate_usage_cost(model, usage, provider=vendor)
+    return cost.status == "estimated" and cost.source == "official_docs_snapshot"
+
+
 # ── Synthetic state.db (works in CI, where .ref/ does not exist) ──────────────────────────────
 
 SYNTH_NOW = 1_800_000_000.0
@@ -190,6 +203,31 @@ SYNTH_SESSIONS = [
     ("s-nousage", "custom", "http://127.0.0.1:9001", "claude-opus-5-5", "unknown", True, 1500, []),
     ("s-empty", "custom", "http://127.0.0.1:9001", "claude-opus-5-5", None, True, 1400, []),
 ]
+
+
+# What a backfill with STANDARD_RULES changes in the synthetic db. The "gateway" rule bills like
+# openai, so its two s-gateway rows are repriced only when the Hermes under test has a bundled
+# gpt-6.1-sol price; otherwise they must be left exactly as they were.
+GATEWAY_ROWS = {
+    ("s-gateway", "gpt-6.1-sol", "", "https://gateway.example.com/openai/v1"),
+    ("s-gateway", "chat-latest", "", "https://gateway.example.com/openai/v1/"),
+}
+STANDARD_CHANGED_ROWS = GATEWAY_ROWS | {
+    ("s-shim", "claude-opus-5-5", "", "http://127.0.0.1:9001"),
+    ("s-shim", "claude-opus-5-5", "title_generation", "http://127.0.0.1:9001"),
+    ("s-bedrock", "us.anthropic.claude-opus-5-5-v1:0", "", "http://127.0.0.1:9001"),
+    ("s-gemini", "gemini-3.8-flash", "", "http://127.0.0.1:9002/v1"),
+    ("s-local", "Qwen3.6-35B-A3B-UD-Q4_K_M", "", "http://127.0.0.1:9003/v1"),
+    ("s-direct", "claude-opus-5-5", "title_generation", "http://127.0.0.1:9001"),
+}
+STANDARD_CHANGED_SESSIONS = {"s-shim", "s-bedrock", "s-gateway", "s-gemini", "s-local", "s-nousage"}
+
+
+def expected_changes() -> tuple[set, set, int]:
+    """(usage row keys, session ids, unpriced row count) of a STANDARD_RULES backfill on this Hermes."""
+    if hermes_lists_price("openai", "gpt-6.1-sol"):
+        return STANDARD_CHANGED_ROWS, STANDARD_CHANGED_SESSIONS, 0
+    return STANDARD_CHANGED_ROWS - GATEWAY_ROWS, STANDARD_CHANGED_SESSIONS - {"s-gateway"}, len(GATEWAY_ROWS)
 
 
 def build_synthetic_db(path: Path, now: float = SYNTH_NOW) -> Path:

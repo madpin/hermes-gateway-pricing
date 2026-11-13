@@ -5,10 +5,11 @@ import io
 import json
 import re
 
+import agent.usage_pricing as up
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from helpers import PLUGIN_ID, REAL_DB_NOW, ROOT, SYNTH_NOW
+from helpers import PLUGIN_ID, REAL_DB_NOW, ROOT, SYNTH_NOW, expected_changes, hermes_lists_price
 
 import gateway_pricing as gp
 
@@ -139,11 +140,21 @@ def test_api_preview_with_draft_rules(client, write_settings):
             "aliases": {"chat-latest": "gpt-6.1-sol"},
         },
     ).json()
-    assert body["matched_rule"] == "gw" and body["mode"] == "price_as" and body["status"] == "estimated"
+    assert body["matched_rule"] == "gw" and body["mode"] == "price_as"
     assert body["route"] == {"provider": "openai", "model": "gpt-6.1-sol", "billing_mode": "official_docs_snapshot"}
-    assert body["per_million"]["input"] == pytest.approx(4.0)  # 2.00 * 2
-    # Default usage is 1M in + 1M out: above Hermes' 272K tier, so its "above" rates (4 + 15) apply, x2.
-    assert body["amount_usd"] == pytest.approx(38.0)
+    if hermes_lists_price("openai", "gpt-6.1-sol"):
+        # Default usage is 1M in + 1M out; Hermes' own number for the vendor model (tiers included), x2.
+        hermes = up.estimate_usage_cost(
+            "gpt-6.1-sol", up.CanonicalUsage(input_tokens=1_000_000, output_tokens=1_000_000), provider="openai"
+        )
+        entry = up.get_pricing_entry("gpt-6.1-sol", provider="openai")
+        assert body["status"] == "estimated"
+        assert body["per_million"]["input"] == pytest.approx(float(entry.input_cost_per_million * 2))
+        assert body["amount_usd"] == pytest.approx(float(hermes.amount_usd * 2))
+    else:
+        # This Hermes has no gpt-6.1-sol price: the preview says so instead of inventing one.
+        assert (body["status"], body["amount_usd"], body["per_million"]["input"]) == ("unknown", None, None)
+        assert "Hermes has no openai price for 'gpt-6.1-sol'" in body["reason"]
     assert gp.service.saved_settings(PLUGIN_ID) == {"rules": []}  # drafts are never saved
 
 
@@ -168,8 +179,9 @@ def test_api_preview_no_match_and_errors(client, standard_settings):
 def test_api_backfill(client, standard_settings, synthetic_db, hermes_home):
     url = "/api/plugins/gateway-pricing/backfill"
     before = digest(synthetic_db)
+    want_rows = len(expected_changes()[0])
     dry = client.post(url, json={}).json()
-    assert dry["dry_run"] is True and dry["rows_updated"] == 8 and digest(synthetic_db) == before
+    assert dry["dry_run"] is True and dry["rows_updated"] == want_rows and digest(synthetic_db) == before
     assert set(dry) >= {
         "dry_run",
         "rows_considered",
@@ -182,7 +194,7 @@ def test_api_backfill(client, standard_settings, synthetic_db, hermes_home):
     refused = client.post(url, json={"dry_run": False})
     assert refused.status_code == 409 and digest(synthetic_db) == before
     done = client.post(url, json={"dry_run": False, "confirm": True}).json()
-    assert done["rows_updated"] == 8 and done["backup_path"].startswith(str(hermes_home))
+    assert done["rows_updated"] == want_rows and done["backup_path"].startswith(str(hermes_home))
     assert client.post(url, json={"dry_run": False, "confirm": True}).json()["rows_updated"] == 0
     assert client.post(url, json={"days": "x"}).status_code == 400
 
@@ -232,7 +244,7 @@ def test_cli_preview_detect_backfill(installed, standard_settings, synthetic_db)
     code, out, _ = cli("backfill")
     assert code == 0 and "DRY RUN" in out and "--apply" in out and digest(synthetic_db) == before
     code, out, _ = cli("backfill", "--apply", "--json")
-    assert code == 0 and json.loads(out)["rows_updated"] == 8
+    assert code == 0 and json.loads(out)["rows_updated"] == len(expected_changes()[0])
     code, out, err = cli("detect", "--days", "0")
     assert code == 1 and "days" in err
 

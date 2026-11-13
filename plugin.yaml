@@ -1,12 +1,13 @@
 name: gateway-pricing
-version: 0.2.0
+version: 0.2.1
 description: >-
   Cost estimates for sessions that go through custom providers, local shims and LLM gateways,
   which Hermes otherwise records as $0.00 / unknown. Declare per-endpoint rules (bill like a
   vendor, explicit prices, or free) and optionally backfill old sessions.
 author: madpin
 license: MIT
-requires_hermes: ">=0.23.1"
+# The oldest Hermes CI verifies: release v2026.9.24, which reports 0.21.5 (see README "Compatibility").
+requires_hermes: ">=0.21.5"
 config_schema:
   enabled:
     type: bool

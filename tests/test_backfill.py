@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import agent.usage_pricing as up
 import pytest
-from helpers import REAL_DB_NOW, SYNTH_NOW, build_synthetic_db
+from helpers import REAL_DB_NOW, SYNTH_NOW, build_synthetic_db, expected_changes
 
 import gateway_pricing as gp
 
@@ -63,7 +63,9 @@ def test_dry_run_writes_nothing(ready, hermes_home):
     result = service.backfill("gateway-pricing", now=SYNTH_NOW)
     assert digest(ready) == before
     assert result["dry_run"] is True and result["backup_path"] is None
-    assert (result["rows_updated"], result["sessions_updated"]) == (8, 6)
+    want_rows, want_sessions, unpriced = expected_changes()
+    assert (result["rows_updated"], result["sessions_updated"]) == (len(want_rows), len(want_sessions))
+    assert result["rows_unpriced"] == unpriced
     assert result["sessions_skipped_live"] == 1 and result["sessions_skipped_priced"] == 1
     assert result["delta_usd"] > 0
     assert not (hermes_home / "gateway-pricing").exists()
@@ -80,20 +82,12 @@ def test_apply_updates_exactly_the_expected_rows(ready):
     before_u, before_s = usage(ready), sessions(ready)
     result = apply()
     after_u, after_s = usage(ready), sessions(ready)
+    want_rows, want_sessions, _unpriced = expected_changes()
     changed_u = {k for k in after_u if after_u[k] != before_u[k]}
-    assert changed_u == {
-        ("s-shim", "claude-opus-5-5", "", "http://127.0.0.1:9001"),
-        ("s-shim", "claude-opus-5-5", "title_generation", "http://127.0.0.1:9001"),
-        ("s-bedrock", "us.anthropic.claude-opus-5-5-v1:0", "", "http://127.0.0.1:9001"),
-        ("s-gateway", "gpt-6.1-sol", "", "https://gateway.example.com/openai/v1"),
-        ("s-gateway", "chat-latest", "", "https://gateway.example.com/openai/v1/"),
-        ("s-gemini", "gemini-3.8-flash", "", "http://127.0.0.1:9002/v1"),
-        ("s-local", "Qwen3.6-35B-A3B-UD-Q4_K_M", "", "http://127.0.0.1:9003/v1"),
-        ("s-direct", "claude-opus-5-5", "title_generation", "http://127.0.0.1:9001"),
-    }
+    assert changed_u == want_rows
     changed_s = {k for k in after_s if after_s[k] != before_s[k]}
-    assert changed_s == {"s-shim", "s-bedrock", "s-gateway", "s-gemini", "s-local", "s-nousage"}
-    assert (result["rows_updated"], result["sessions_updated"]) == (8, 6)
+    assert changed_s == want_sessions
+    assert (result["rows_updated"], result["sessions_updated"]) == (len(want_rows), len(want_sessions))
 
     shim = after_u[("s-shim", "claude-opus-5-5", "", "http://127.0.0.1:9001")]
     assert shim["estimated_cost_usd"] == pytest.approx(opus(1000, 2000, 50000))
@@ -191,7 +185,8 @@ def test_wal_database_dry_run_and_writer_lock(installed, standard_settings, herm
     assert conn.execute("PRAGMA journal_mode=wal").fetchone()[0] == "wal"
     conn.close()
     before = digest(db)
-    assert service.backfill("gateway-pricing", now=SYNTH_NOW)["rows_updated"] == 8
+    want_rows = len(expected_changes()[0])
+    assert service.backfill("gateway-pricing", now=SYNTH_NOW)["rows_updated"] == want_rows
     assert digest(db) == before
     locker = sqlite3.connect(db, isolation_level=None)
     locker.execute("BEGIN IMMEDIATE")
@@ -203,7 +198,7 @@ def test_wal_database_dry_run_and_writer_lock(installed, standard_settings, herm
         locker.close()
     assert digest(db) == before
     assert list((hermes_home / "gateway-pricing" / "backups").glob("state-*.db")) == []
-    assert apply()["rows_updated"] == 8  # works once the writer is gone
+    assert apply()["rows_updated"] == want_rows  # works once the writer is gone
 
 
 def test_days_window(ready):

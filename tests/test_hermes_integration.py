@@ -8,7 +8,7 @@ from decimal import Decimal
 
 import agent.usage_pricing as up
 import pytest
-from helpers import PLUGIN_ID
+from helpers import PLUGIN_ID, hermes_lists_price
 
 import gateway_pricing as gp
 
@@ -53,6 +53,17 @@ class TestHermesContract:
 
     def test_plugin_context_api(self):
         assert compat.check_plugin_api() == []
+
+    def test_hermes_loader_accepts_requires_hermes(self):
+        # The contract above can pass while Hermes' loader still skips the plugin on a version gate.
+        import re
+        from types import SimpleNamespace
+
+        from helpers import ROOT
+        from hermes_cli.plugins_manifest import requires_hermes_error
+
+        spec = re.search(r"^requires_hermes:\s*\"([^\"]+)\"", (ROOT / "plugin.yaml").read_text(), re.M).group(1)
+        assert requires_hermes_error(SimpleNamespace(requires_hermes=spec)) is None
 
     def test_python_311_syntax(self):
         import ast
@@ -116,6 +127,10 @@ def test_vendor_alias_costs_equal_hermes_own_numbers(installed, standard_setting
         url = "https://gateway.example.com/openai/v1"
     expected = up.estimate_usage_cost(model, USAGE, provider=vendor)
     got = up.estimate_usage_cost(shim_model, USAGE, provider="custom", base_url=url)
+    if not hermes_lists_price(vendor, model):
+        # This Hermes has no list price for the vendor model: the shim stays unpriced, like Hermes itself.
+        assert got.status == expected.status == "unknown" and got.amount_usd is None
+        return
     factor = Decimal("1.1") if vendor == "openai" else 1
     assert got.status == "estimated" and got.source == expected.source == "official_docs_snapshot"
     assert got.amount_usd == expected.amount_usd * factor

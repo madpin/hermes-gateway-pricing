@@ -1,7 +1,7 @@
 {
   "active": true,
   "hermes_version": "0.0.0-fixture",
-  "plugin_version": "0.2.0",
+  "plugin_version": "0.2.1",
   "reason": "",
   "rules_total": 5,
   "rules_valid": 4,

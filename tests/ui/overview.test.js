@@ -39,7 +39,7 @@ describe('Overview', () => {
     await show('overview')
 
     expect(screen.getByText('Active')).toBeTruthy()
-    expect(screen.getByText(/Profile work · plugin 0\.2\.0 · Hermes 0\.0\.0-fixture/)).toBeTruthy()
+    expect(screen.getByText(/Profile work · plugin 0\.2\.1 · Hermes 0\.0\.0-fixture/)).toBeTruthy()
     expect(screen.getByText(/4 of 4 rules valid/)).toBeTruthy()
     expect(ctx.restCalls.map(c => `${c.method} ${c.path}`)).toEqual(['GET /status', 'GET /detected?days=30'])
     expect(ctx.restCalls.every(c => c.timeoutMs > 0)).toBe(true)

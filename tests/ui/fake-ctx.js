@@ -258,7 +258,7 @@ export function makeGateway(values = fixture('settings')) {
       return {
         key: 'gateway-pricing',
         name: 'gateway-pricing',
-        version: '0.2.0',
+        version: '0.2.1',
         status: 'enabled',
         has_desktop_half: true,
         settings_schema: fixture('settings-fields').map(field => ({

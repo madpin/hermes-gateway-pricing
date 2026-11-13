@@ -24,10 +24,11 @@ jobs:
     # desktop/plugin.js under vitest + jsdom, against tests/ui/sdk-stub.js and fixtures generated from
     # the real backend (their drift is checked by tests/test_ui_fixtures.py in the test job). The real
     # SDK index and component sources come from a shallow Hermes clone, so the import and stub-contract
-    # checks run instead of skipping.
+    # checks run instead of skipping. The clone lives OUTSIDE the workspace, so nothing scans it as
+    # part of this repo.
     runs-on: ubuntu-latest
     env:
-      HERMES_SRC: ${{ github.workspace }}/hermes-agent
+      HERMES_SRC: ${{ github.workspace }}/../hermes-agent
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,16 +38,16 @@ jobs:
       - name: Shallow-clone Hermes main (SDK index and component sources, read only)
         run: git clone --depth 1 https://github.com/NousResearch/hermes-agent "$HERMES_SRC"
 
-      - name: Install the UI test tools (pinned in tests/ui/package.json)
+      - name: Install the UI test tools (exact versions from tests/ui/package-lock.json)
         working-directory: tests/ui
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: UI tests
         working-directory: tests/ui
-        env:
-          HERMES_SDK_INDEX: ${{ github.workspace }}/hermes-agent/apps/desktop/src/sdk/index.ts
-          HERMES_DESKTOP_SRC: ${{ github.workspace }}/hermes-agent/apps/desktop/src
-        run: npx vitest run
+        run: |
+          export HERMES_SDK_INDEX="$HERMES_SRC/apps/desktop/src/sdk/index.ts"
+          export HERMES_DESKTOP_SRC="$HERMES_SRC/apps/desktop/src"
+          npx vitest run
 
   test:
     runs-on: ubuntu-latest
@@ -54,28 +55,19 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.11", "3.14"]
-        hermes: [main, latest-release]
+        # The compatibility claim in README.md names exactly these two. Bump the pinned release
+        # (and the README) together.
+        hermes: [main, v2026.9.24]
     env:
-      HERMES_SRC: ${{ github.workspace }}/hermes-agent
+      HERMES_SRC: ${{ github.workspace }}/../hermes-agent
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Resolve Hermes ref
-        id: ref
-        run: |
-          if [ "${{ matrix.hermes }}" = "main" ]; then
-            echo "ref=main" >> "$GITHUB_OUTPUT"
-          else
-            tag=$(git ls-remote --tags --refs --sort=-v:refname https://github.com/NousResearch/hermes-agent 'v*' \
-                  | head -n1 | sed 's#.*refs/tags/##')
-            echo "ref=${tag}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Shallow-clone Hermes ${{ steps.ref.outputs.ref }}
-        run: git clone --depth 1 --branch "${{ steps.ref.outputs.ref }}" https://github.com/NousResearch/hermes-agent "$HERMES_SRC"
+      - name: Shallow-clone Hermes ${{ matrix.hermes }} (outside the workspace)
+        run: git clone --depth 1 --branch "${{ matrix.hermes }}" https://github.com/NousResearch/hermes-agent "$HERMES_SRC"
 
       - name: Install test tools and the minimum Hermes needs to import agent.usage_pricing / hermes_cli
         run: |
@@ -90,19 +82,48 @@ jobs:
         run: PYTHONPATH="$HERMES_SRC" python scripts/check_hermes_compat.py
 
       - name: Tests
-        run: python -m pytest -q
+        run: python -m pytest -q -rs
 
-      # Fails the build if anything other than the documented "no core override" finding fails.
+      # Validates the plugin directory alone (never the Hermes clone). Fails unless every expected
+      # check ran and the failures are exactly the documented ones: on main, "no core override"
+      # (README "Why this is not in the plugin catalog"); v2026.9.24 predates that check and "oauth".
       - name: Admission validator (only "no core override" may fail)
+        env:
+          HERMES_LEG: ${{ matrix.hermes }}
         run: |
           PYTHONPATH="$HERMES_SRC" python - <<'EOF'
+          import os
           from pathlib import Path
           from hermes_cli.plugin_validate import validate_plugin_dir
-          report = validate_plugin_dir(Path("."))
-          failed = [c for c in report.checks if not c[1]]
+
+          release_checks = [
+              "manifest", "manifest fields", "requires_hermes", "config schema", "requires_env", "loadable",
+              "python dependencies", "capability probe", "declared tools", "declared hooks",
+              "declared middleware", "built-in tool collisions", "security scan", "desktop surface",
+          ]
+          if os.environ["HERMES_LEG"] == "main":
+              required, allowed_failures = release_checks + ["oauth", "no core override"], ["no core override"]
+          else:
+              required, allowed_failures = release_checks, []
+          plugin_dir = Path(os.environ["GITHUB_WORKSPACE"]).resolve()
+          hermes_dir = Path(os.environ["HERMES_SRC"]).resolve()
+          assert not hermes_dir.is_relative_to(plugin_dir), f"Hermes clone {hermes_dir} is inside {plugin_dir}"
+          report = validate_plugin_dir(plugin_dir)
           for check in report.checks:
               print("PASS" if check[1] else "FAIL", *check[::2])
           for warning in report.warnings:
               print("WARN", warning)
-          raise SystemExit(0 if [c[0] for c in failed] == ["no core override"] else 1)
+          ran = [c[0] for c in report.checks]
+          failed = [c[0] for c in report.checks if not c[1]]
+          missing = [name for name in required if name not in ran]
+          if "no core override" not in ran:
+              print("NOTE this Hermes has no 'no core override' check")
+          problems = []
+          if missing:
+              problems.append(f"expected checks did not run: {missing}")
+          if failed != allowed_failures:
+              problems.append(f"failed checks {failed}, expected exactly {allowed_failures}")
+          for problem in problems:
+              print("ERROR", problem)
+          raise SystemExit(1 if problems else 0)
           EOF

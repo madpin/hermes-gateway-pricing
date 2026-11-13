@@ -8,7 +8,7 @@ live from ``plugins.entries.<plugin id>.settings`` of the active profile.
 from __future__ import annotations
 
 # No module-level relative imports here: test runners import this file without a parent package.
-__version__ = "0.2.0"  # kept equal to version.py and plugin.yaml by tests/test_packaging.py
+__version__ = "0.2.1"  # kept equal to version.py and plugin.yaml by tests/test_api_cli.py
 
 __all__ = ["__version__", "register"]
 

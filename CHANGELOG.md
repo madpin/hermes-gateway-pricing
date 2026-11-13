@@ -6,6 +6,35 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-13
+
+### Fixed
+- `requires_hermes` is now `>=0.21.5` (was `>=0.23.1`). Hermes release `v2026.9.24` reports
+  version 0.21.5, so its plugin loader skipped the plugin ("requires hermes >=0.23.1, running
+  0.21.5") even though the plugin works on it. A new contract test runs Hermes' own
+  `requires_hermes` gate against `plugin.yaml`.
+- Tests no longer assume Hermes' bundled content. Expectations that depend on a bundled list price
+  (`gpt-6.1-sol` is missing on `v2026.9.24`) now come from the running Hermes. Where that Hermes
+  cannot price a model, the tests check that the plugin leaves the cost unknown and the rows
+  untouched. The desktop review lint is skipped, with a stated reason, on a Hermes that lacks
+  `desktop_review_findings`.
+- The UI fixtures no longer depend on which Hermes generated them. The backfill fixtures use
+  `prices` / `free` rules. The drift test compares every fixture exactly, except a short, named
+  list of values that Hermes itself provides.
+
+### Changed
+- CI: the `ui` job installs from `tests/ui/package-lock.json` with `npm ci`. The `npm install`
+  without a lockfile crashed on npm 10.9.9.
+- CI: Hermes is cloned outside the workspace, and the admission validator runs on the plugin
+  directory only. Before, it also scanned the Hermes clone and could pass vacuously. On `main` it
+  must run all 16 named checks and fail exactly "no core override". On the release it must run
+  its 14 checks and fail none, because that release has no "no core override" or "oauth" check.
+- CI: the release leg is pinned to `v2026.9.24` instead of "latest tag", so the compatibility
+  claim names what was actually tested.
+- README, CONTRIBUTING: the compatibility statement names exactly what CI verifies. The
+  validator quote no longer carries line numbers. Local testing against any Hermes checkout is
+  documented through `HERMES_SRC`.
+
 ## [0.2.0] - 2026-11-13
 
 ### Added
@@ -46,6 +75,7 @@ All notable changes to this project are documented here. The format follows
 - `scripts/check_hermes_compat.py` and a CI workflow testing against Hermes `main` and the latest
   release.
 
-[Unreleased]: https://github.com/madpin/hermes-gateway-pricing/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/madpin/hermes-gateway-pricing/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/madpin/hermes-gateway-pricing/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/madpin/hermes-gateway-pricing/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/madpin/hermes-gateway-pricing/releases/tag/v0.1.0
